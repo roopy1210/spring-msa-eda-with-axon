@@ -19,17 +19,20 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Override
     public boolean isValidInventory(OrderCreatedEvent event) {
-        int totalRequestQty = 0;
+        int totalRequestQty = event.getOrderDetails().stream().mapToInt(o -> o.getQty()).sum();
         boolean isValidInventory = false;
 
         GetInventoryByProductIdQuery getInventoryByProductIdQuery = new GetInventoryByProductIdQuery(event.getOrderId());
 
-        InventoryVO inventoryVO = null;
+        InventoryVO inventoryVO;
         try {
             inventoryVO = queryGateway.query(getInventoryByProductIdQuery, ResponseTypes.instanceOf(InventoryVO.class)).join();
-            if (totalRequestQty <= inventoryVO.getInventoryQty()) {
+            log.info("totalRequestQty : {}, inventoryVO.getInventoryQty : {}", totalRequestQty, inventoryVO.getInventoryQty());
+
+            if (totalRequestQty <= inventoryVO.getInventoryQty() || inventoryVO.getInventoryQty() != 0) {
                 isValidInventory = true;
             }
+            log.info("재고여부 : {}", isValidInventory);
         } catch(Exception e) {
             log.error(e.getMessage());
         }
